@@ -106,7 +106,7 @@ tla: {
 
 **And append `'tla'` to ORDER:** `ORDER: ['cmp', 'fraud', 'okto', 'hmlc', 'canon', 'tla']` — this wires the next-quest cycle automatically.
 
-> Builder note: `ba` is optional in the template — `case.html` guards on `C.ba` (verify once; the fraud entry ships without it). If the guard is missing, add `if (C.ba)` around the ba block rather than dropping the section.
+> Builder note: `ba` is optional and already guarded — verified: `case.html` line ~290 wraps the whole block in `if (C.ba)` (the fraud entry ships without one). No template change needed.
 
 ---
 

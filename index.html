@@ -167,10 +167,11 @@
   .meterbox { max-width: 860px; }
   .meterbox .lbl { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .2em; text-transform: uppercase;
     color: #a39d88; display: flex; justify-content: space-between; gap: 10px; }
-  .meterbox .lbl b { color: var(--gold); font-size: .8rem; }
-  .meter { margin-top: 10px; height: 22px; border: 2px solid #6b6558; border-radius: 6px; overflow: hidden;
-    background: rgba(255,255,255,.05); display: flex; }
-  .meter i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(90deg, var(--gold) 0 18px, #e5b002 18px 22px);
+  .meterbox .lbl b { color: var(--green); font-size: .8rem; }
+  /* a full bar means done — green, solid, no stripes */
+  .meter { margin-top: 10px; height: 12px; border: 2px solid #3a352c; border-radius: 999px; overflow: hidden;
+    background: rgba(255,255,255,.06); }
+  .meter i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--green);
     transition: width 1.4s cubic-bezier(.2,.7,.3,1); }
   .achv { margin-top: 30px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
     border: 2px solid var(--gold); border-radius: 12px; padding: 18px 22px; }
@@ -459,36 +460,29 @@
   }), { threshold: 0.15 })
   document.querySelectorAll('.rv').forEach(el => io.observe(el))
 
-  /* the meter gets its own zero-threshold observer — a fast programmatic scroll
-     can blow past a 0.15 threshold without ever intersecting enough to fire */
-  let meterDone = false
-  function runMeter() {
-    if (meterDone) return
-    meterDone = true
-    const fill = document.getElementById('meterFill'), val = document.getElementById('meterVal')
-    fill.style.width = '100%'
-    if (reduce) { val.textContent = '84/84'; return }
-    const t0 = performance.now()
-    const step = now => {
-      const p = Math.min(1, (now - t0) / 1400)
-      val.textContent = Math.round(84 * p) + '/84'
-      if (p < 1) requestAnimationFrame(step)
-    }
-    requestAnimationFrame(step)
-  }
+  /* the meter — one trigger mechanism, not two: a geometry check on load and
+     on scroll. Simpler than an observer with a fallback, and it cannot miss. */
   const mb = document.querySelector('.meterbox')
   if (mb) {
-    const mio = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { runMeter(); mio.disconnect() } }), { threshold: 0 })
-    mio.observe(mb)
-    /* belt over braces: some mobile emulators drop IO callbacks during
-       programmatic scrolls — a plain geometry check on scroll cannot miss */
-    const seen = () => {
-      if (meterDone) { removeEventListener('scroll', seen); return }
-      const r = mb.getBoundingClientRect()
-      if (r.top < innerHeight && r.bottom > 0) { runMeter(); removeEventListener('scroll', seen) }
+    const runMeter = () => {
+      removeEventListener('scroll', arm)
+      document.getElementById('meterFill').style.width = '100%'
+      const val = document.getElementById('meterVal')
+      if (reduce) { val.textContent = '84/84'; return }
+      const t0 = performance.now()
+      const step = now => {
+        const p = Math.min(1, (now - t0) / 1400)
+        val.textContent = Math.round(84 * p) + '/84'
+        if (p < 1) requestAnimationFrame(step)
+      }
+      requestAnimationFrame(step)
     }
-    addEventListener('scroll', seen, { passive: true })
-    seen()
+    const arm = () => {
+      const r = mb.getBoundingClientRect()
+      if (r.top < innerHeight && r.bottom > 0) runMeter()
+    }
+    addEventListener('scroll', arm, { passive: true })
+    arm()
   }
 })()
 </script>

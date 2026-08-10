@@ -1,5 +1,7 @@
 # That Level Again — Case Study
 
+**📖 Read it live:** [anandparth.github.io/That-Level-Again-Case-Study](https://anandparth.github.io/That-Level-Again-Case-Study/)
+
 Case study of the troll platformer built into [parthanand.in](https://parthanand.in) — a game funded by the site's own coin economy, where **1 coin = 1 life**.
 
 🎮 **Play it:** [parthanand.in/arcade](https://parthanand.in/arcade)
@@ -14,6 +16,7 @@ Case study of the troll platformer built into [parthanand.in](https://parthanand
 
 ## In this repo
 
-- [`CASE-STUDY-SPEC.md`](CASE-STUDY-SPEC.md) — the complete case-study content (final copy) and the exact build plan for integrating it into the portfolio: data shapes, asset capture instructions, verification checklist, and the gotcha ledger from the original build.
+- [`index.html`](index.html) — the case study itself: hand-drawn Excalidraw-style borders around real 8-bit game assets, zero dependencies
+- [`CASE-STUDY-SPEC.md`](CASE-STUDY-SPEC.md) — the content (final copy) and the build plan for integrating it into the portfolio: data shapes, asset capture instructions, verification checklist, and the gotcha ledger from the original build.
 
 Built solo in two days, August 2026. Mechanics studied from Level Devil (Unept); the name, all 84 layouts, and the art are original.

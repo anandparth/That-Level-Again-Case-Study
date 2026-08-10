@@ -1,6 +1,7 @@
 # THAT LEVEL AGAIN — Case Study Build Spec
 
-**Status:** SPEC ONLY — nothing integrated, nothing baked, nothing deployed.
+**Status:** ✅ BUILT as the standalone GitHub Pages study at https://anandparth.github.io/That-Level-Again-Case-Study/ (2026-08-11).
+**Scope note (Parth's direction):** GitHub-only — Parts 4 and 6's portfolio-site integration is explicitly OUT of scope; the site was left untouched. Parts 2/3/5/7 were executed here.
 **Written by:** Fable (planning agent), 2026-08-11, from the actual build session that shipped the game.
 **For:** a Sonnet-class builder agent. Follow this document exactly. Every sentence of case-study copy in Part 2 is FINAL — do not rewrite, paraphrase, or "improve" it. Your job is integration, asset capture, and verification.
 **The subject:** the game live at **https://parthanand.in/arcade** — a coins-as-lives troll platformer built into Parth Anand's portfolio, shipped 2026-08-10.

@@ -82,8 +82,8 @@ tla: {
     { t: 'a QA harness as part of the design', d: 'Solvability as a compile step, key placement proven by replaying the winning path, 275+ checks green before deploy. The claim "every level is beatable" is not marketing copy — it is a test result.' },
   ],
   ba: {
-    label: 'one door design, two tries',
-    before: { img: 'tla-before', cap: 'variant B — a walkable corridor of doors; charming, rejected for feeling zoomed-in and slow to scan' },
+    label: 'the title screen — explored dark, shipped paper',
+    before: { img: 'tla-before', cap: 'variant C — a dark, shadcn-style take with a ⌘K palette; polished, rejected for sounding like someone else’s site' },
     after: { img: 'tla-after', cap: 'the shipped title screen — two buttons, the coin rule in plain text, and the whole game one tap away' },
   },
   shots: [
@@ -122,7 +122,7 @@ All captures from the **local baked preview** (`npm run serve` in `D:\Dev\portfo
 | `tla-death.webp` | `:5599/arcade?level=1-2`, hold ArrowRight ~2.6 s to die, wait 900 ms, screenshot `.screen` (shows RETRY — 1 ◉) |
 | `tla-keystage.webp` | Seed plan `{"3":[0,2,4]}` in `pa-ld`, open `:5599/arcade?level=3-1`, wait 1 s, screenshot `.screen` — golden key visible in-world + "key in this stage" HUD chip |
 | `tla-reward.webp` | `:5599/reward?preview=1`, wait ~6.5 s (walk-on + reveal complete), full-viewport shot |
-| `tla-before.webp` | `:5495/` (arcadeb corridor variant), wait 1.7 s, screenshot the `.corridor` element |
+| `tla-before.webp` | `:5496/` (arcadec dark variant — the corridor code no longer exists; arcadeb was rewritten into the sketch board), wait 2.2 s, full-viewport shot |
 | `tla-after.webp` | Same frame as `tla-title` but you may reuse the title capture cropped to the hero block — before/after should feel like the same crop discipline |
 
 Sanity: every image must load on the baked case page with zero 404s (the audit will catch a miss).

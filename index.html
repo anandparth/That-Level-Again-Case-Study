@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>That Level Again — a game that lies to you · case study</title>
+<meta name="description" content="Case study of the coins-as-lives troll platformer built into parthanand.in — 84 machine-proven stages, a paywall-proof economy, and a search bot that plays the game so every level is provably beatable.">
+<meta name="color-scheme" content="only light">
+<link rel="canonical" href="https://anandparth.github.io/That-Level-Again-Case-Study/">
+<meta property="og:title" content="That Level Again — a game that lies to you">
+<meta property="og:description" content="A troll platformer funded by a portfolio's own coin economy. 84 stages, every one machine-proven beatable.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://anandparth.github.io/That-Level-Again-Case-Study/">
+<meta property="og:image" content="https://anandparth.github.io/That-Level-Again-Case-Study/assets/tla-title.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/key.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=Caveat:wght@400..700&family=Spline+Sans+Mono:wght@400..600&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family: 'Excalifont'; src: url('assets/Excalifont-Regular.woff2') format('woff2'); font-display: swap; }
+
+  :root {
+    --paper: #fbfaf4; --paper-2: #f5f3e8; --dot: #e3decf; --ink: #222019; --ink-soft: #403c32;
+    --muted: #74705f; --line: #d8d3c3; --gold: #FFC402; --gold-2: #c4973f; --green: #2f9e44; --red: #e03131;
+    --font-disp: 'Bricolage Grotesque', system-ui, sans-serif;
+    --font-body: 'Poppins', system-ui, sans-serif;
+    --font-mono: 'Spline Sans Mono', ui-monospace, monospace;
+    --font-hand: 'Caveat', ui-rounded, cursive;
+    --font-sketch: 'Excalifont', 'Caveat', cursive;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font-body); color: var(--ink); background: var(--paper);
+    background-image: radial-gradient(var(--dot) 1.15px, transparent 1.15px); background-size: 26px 26px;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden; line-height: 1.6; }
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: inherit; }
+  .wrap { width: min(1080px, 100%); margin: 0 auto; padding: 0 22px; }
+
+  /* sketch boxes — strokes drawn by JS into an SVG behind the content */
+  .skb { position: relative; background: var(--paper); }
+  .skb > .sk { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px);
+    overflow: visible; pointer-events: none; }
+  .skb > .sk path { fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .skb > * { position: relative; }
+  .skb > .sk { z-index: 0; } .skb > *:not(.sk) { z-index: 1; }
+
+  .mono { font-family: var(--font-mono); letter-spacing: .16em; text-transform: uppercase; }
+  .hand { font-family: var(--font-hand); }
+
+  /* reveals */
+  .rv { opacity: 0; transform: translateY(16px); transition: opacity .55s ease, transform .55s ease; }
+  .rv.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .rv { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
+
+  /* ── top bar ── */
+  .top { position: sticky; top: 0; z-index: 50; display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 22px; background: rgba(251,250,244,.88); backdrop-filter: blur(6px); border-bottom: 2px solid var(--line); }
+  .top .logo { font-family: var(--font-sketch); font-size: 1.25rem; text-decoration: none; }
+  .top .logo em { font-style: normal; color: #5b3df5; }
+  .top nav { display: flex; gap: 16px; font-family: var(--font-mono); font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; }
+  .top nav a { text-decoration: none; color: var(--muted); }
+  .top nav a:hover { color: var(--ink); }
+
+  /* ── hero ── */
+  /* longhand on purpose: a `padding: X 0 Y` shorthand here would zero the .wrap
+     gutters on the same element — the ledger bug, and it bit this very file */
+  .hero { padding-top: clamp(56px, 10vh, 110px); padding-bottom: clamp(30px, 5vh, 54px); }
+  .hero .grid { display: grid; grid-template-columns: 1fr auto; gap: 30px 56px; align-items: center; }
+  @media (max-width: 760px) { .hero .grid { grid-template-columns: 1fr; } .hero .doorcol { display: none; } }
+  .badge { display: inline-block; font-family: var(--font-mono); font-size: .6rem; letter-spacing: .22em;
+    text-transform: uppercase; background: var(--gold); border: 2px solid var(--ink); border-radius: 999px;
+    padding: 6px 14px; box-shadow: 2px 3px 0 rgba(34,32,25,.25); }
+  .hero h1 { margin-top: 20px; font-family: var(--font-disp); font-weight: 800; letter-spacing: -.02em;
+    font-size: clamp(2.2rem, 6.5vw, 4.4rem); line-height: .98; }
+  .hero .meta { margin-top: 14px; font-family: var(--font-mono); font-size: .62rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted); display: flex; gap: 8px 18px; flex-wrap: wrap; }
+  .hero .hook { margin-top: 22px; max-width: 620px; font-family: var(--font-hand); font-size: clamp(1.3rem, 3.4vw, 1.7rem);
+    line-height: 1.35; color: var(--ink-soft); }
+  .cta { margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn { font-family: var(--font-mono); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 600;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 9px; padding: 13px 22px;
+    border: 3px solid var(--ink); border-radius: 12px; background: var(--gold); color: var(--ink);
+    box-shadow: 4px 5px 0 var(--ink); transition: transform .1s, box-shadow .1s; }
+  .btn.alt { background: var(--paper); }
+  .btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 7px 0 var(--ink); }
+  .btn:active { transform: translate(4px, 5px); box-shadow: 0 0 0 var(--ink); }
+  .doorcol canvas { image-rendering: pixelated; display: block; }
+  .doorcol .cap { margin-top: 10px; text-align: center; font-family: var(--font-hand); font-size: 1rem; color: var(--muted); }
+
+  /* ── stats ── */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 20px; padding: 8px 0 6px; }
+  .stat { padding: 20px 20px 16px; }
+  .stat b { display: flex; align-items: baseline; gap: 6px; font-family: var(--font-disp); font-weight: 800;
+    font-size: clamp(2rem, 4.5vw, 2.7rem); line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat b .plus { font-size: 1.3rem; color: var(--gold-2); }
+  .stat span { display: block; margin-top: 7px; font-family: var(--font-mono); font-size: .56rem;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--muted); line-height: 1.6; }
+
+  /* ── section headers ── */
+  section { padding: clamp(38px, 7vh, 72px) 0; }
+  .shead { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: clamp(22px, 4vh, 34px); }
+  .shead .n { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .24em; color: #5b3df5; text-transform: uppercase; }
+  .shead h2 { font-family: var(--font-sketch); font-weight: 400; font-size: clamp(1.7rem, 4.6vw, 2.5rem); line-height: 1; }
+
+  /* ── dark bands ── */
+  .band { background: #191713; background-image: radial-gradient(#292620 1.15px, transparent 1.15px); background-size: 26px 26px;
+    color: #f2eee3; }
+  .band .shead .n { color: var(--gold); }
+  .band .shead h2 { color: #f7f3e8; }
+  .band p { color: #cfc9b8; }
+  .band .skb { background: #221f1a; }
+  .band .skb > .sk path { stroke: #6b6558; }
+
+  .brief p { max-width: 760px; font-size: clamp(.98rem, 2.4vw, 1.08rem); }
+  .brief .cards { margin-top: 28px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 22px; }
+  .brief .card { padding: 22px 24px 20px; }
+  .brief .card .tag { font-family: var(--font-mono); font-size: .56rem; letter-spacing: .2em; color: var(--red); text-transform: uppercase; }
+  .band .brief .card .tag { color: #ff8787; }
+  .brief .card p { margin-top: 10px; font-size: .95rem; }
+
+  /* ── insight ── */
+  .insight { text-align: center; }
+  .insight .q { max-width: 780px; margin: 0 auto; font-family: var(--font-hand); font-size: clamp(1.5rem, 4vw, 2.1rem);
+    line-height: 1.35; color: var(--ink); }
+  .insight .q .hl { background: linear-gradient(transparent 55%, #ffe89b 55%); }
+  .insight .who { margin-top: 16px; font-family: var(--font-mono); font-size: .58rem; letter-spacing: .2em;
+    text-transform: uppercase; color: var(--muted); }
+
+  /* ── approach ── */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 22px; }
+  .step { padding: 22px 22px 20px; }
+  .step .k { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 30px;
+    font-family: var(--font-mono); font-size: .72rem; font-weight: 600; border: 2px solid var(--ink); border-radius: 8px;
+    background: var(--paper-2); box-shadow: 2px 3px 0 rgba(34,32,25,.2); }
+  .step h3 { margin-top: 12px; font-family: var(--font-disp); font-weight: 800; font-size: 1.12rem; line-height: 1.2; }
+  .step p { margin-top: 8px; font-size: .92rem; color: var(--ink-soft); }
+
+  /* ── figures ── */
+  .figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 26px; }
+  .figs.wide { grid-template-columns: 1fr; max-width: 900px; margin: 0 auto; }
+  figure.mock { margin: 0; }
+  figure.mock .frame { padding: 10px; }
+  figure.mock img { border-radius: 4px; }
+  figure.mock figcaption { margin-top: 12px; font-family: var(--font-hand); font-size: 1.08rem; color: var(--muted); }
+  .figs.wide + .figs.wide { margin-top: 26px; }
+
+  /* ── before / after ── */
+  .ba { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 26px; }
+  .ba .chip { display: inline-block; font-family: var(--font-mono); font-size: .56rem; letter-spacing: .2em;
+    text-transform: uppercase; border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px; margin-bottom: 12px;
+    background: #ffc9c9; box-shadow: 2px 2px 0 rgba(34,32,25,.2); }
+  .ba .after .chip { background: #b2f2bb; }
+
+  /* ── wins ── */
+  .wins { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr)); gap: 22px; }
+  .win { padding: 22px 24px 20px; }
+  .win .tag { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: .56rem;
+    letter-spacing: .2em; text-transform: uppercase; color: var(--green); }
+  .win .tag img { width: 15px; height: 14px; image-rendering: pixelated; }
+  .win h3 { margin-top: 10px; font-family: var(--font-disp); font-weight: 800; font-size: 1.15rem; }
+  .win p { margin-top: 8px; font-size: .93rem; color: var(--ink-soft); }
+
+  /* ── loot ── */
+  .meterbox { max-width: 860px; }
+  .meterbox .lbl { font-family: var(--font-mono); font-size: .6rem; letter-spacing: .2em; text-transform: uppercase;
+    color: #a39d88; display: flex; justify-content: space-between; gap: 10px; }
+  .meterbox .lbl b { color: var(--gold); font-size: .8rem; }
+  .meter { margin-top: 10px; height: 22px; border: 2px solid #6b6558; border-radius: 6px; overflow: hidden;
+    background: rgba(255,255,255,.05); display: flex; }
+  .meter i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(90deg, var(--gold) 0 18px, #e5b002 18px 22px);
+    transition: width 1.4s cubic-bezier(.2,.7,.3,1); }
+  .achv { margin-top: 30px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    border: 2px solid var(--gold); border-radius: 12px; padding: 18px 22px; }
+  .achv .tro { font-size: 1.6rem; }
+  .achv .t { font-family: var(--font-mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--gold); line-height: 1.7; }
+  .achv .t b { color: #ece7da; font-weight: 600; }
+  .lstats { margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 14px; }
+  .lstat { border: 1px solid #3a352c; border-radius: 12px; background: #221f1a; padding: 15px 17px 12px; }
+  .lstat b { display: block; font-family: var(--font-disp); font-weight: 800; font-size: 1.7rem; color: var(--gold); line-height: 1; }
+  .lstat span { font-family: var(--font-mono); font-size: .52rem; letter-spacing: .14em; text-transform: uppercase; color: #a39d88; line-height: 1.7; }
+
+  /* ── footer ── */
+  footer { border-top: 2px solid var(--line); padding: 26px 0 34px; }
+  footer .row { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+  footer .hand { font-size: 1.25rem; }
+  footer .hand .pen { color: #5b3df5; }
+  footer nav { display: flex; gap: 18px; font-family: var(--font-mono); font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; }
+  footer nav a { color: var(--muted); text-decoration: none; }
+  footer nav a:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="https://parthanand.in">parth<em>.</em></a>
+  <nav>
+    <a href="https://parthanand.in/arcade">play the game</a>
+    <a href="https://parthanand.in/work">more work</a>
+    <a href="https://github.com/anandparth/That-Level-Again-Case-Study">this repo</a>
+  </nav>
+</header>
+
+<section class="hero wrap">
+  <div class="grid">
+    <div>
+      <span class="badge rv">SIDE QUEST · 2026</span>
+      <h1 class="rv">That Level Again —<br>a game that lies to you</h1>
+      <div class="meta rv">
+        <span>designer · engineer · economy design · qa architecture</span>
+        <span>2026 · parthanand.in — solo, two days</span>
+      </div>
+      <p class="hook rv">This site pays visitors in coins for exploring. Coins for what? I built the answer: a troll platformer where 1 coin = 1 life — and every one of its 84 stages is machine-proven beatable.</p>
+      <div class="cta rv">
+        <a class="btn" href="https://parthanand.in/arcade">▶ play the game</a>
+        <a class="btn alt" href="#briefing">read the study ↓</a>
+      </div>
+    </div>
+    <div class="doorcol rv">
+      <canvas id="doorcv" width="80" height="140" aria-hidden="true"></canvas>
+      <div class="cap">the door. it moves. ✏</div>
+    </div>
+  </div>
+
+  <div class="stats" style="margin-top: clamp(34px, 6vh, 52px)">
+    <div class="stat skb rv"><b data-count="84">0</b><span>stages, all machine-proven beatable</span></div>
+    <div class="stat skb rv"><b data-count="36">0</b><span>keys, every placement verified</span></div>
+    <div class="stat skb rv"><b data-count="275">0</b><span>automated checks before deploy</span></div>
+    <div class="stat skb rv"><b data-count="0">0</b><span>dependencies in a 41.6&nbsp;KB engine</span></div>
+  </div>
+</section>
+
+<section class="band" id="briefing">
+  <div class="wrap brief">
+    <div class="shead rv"><span class="n">01 · mission briefing</span><h2>the quest, in one screen</h2></div>
+    <p class="rv">A pixel platformer living inside this portfolio, funded by its own coin wallet. Twelve levels, eighty-four single-screen stages, thirty-six hidden keys. The floor lies, the exit runs away, gravity is a preference. Built framework-free in a 41.6&nbsp;KB deterministic engine, balanced so a broke player is never dead-ended, and shipped behind 275+ automated checks — including a search bot that plays the real engine and proves every stage has a solution.</p>
+    <div class="cards">
+      <div class="card skb rv">
+        <span class="tag">trap 01 · the economy</span>
+        <p>The portfolio already had a coin economy — visitors earn ◉ for poking around — but nothing to spend it on. Dead currency is worse than no currency. The brief I set myself: make the coins matter with an arcade where 1 coin = 1 life. The catch: a troll platformer kills you 3–8 times per stage <em>by design</em>, but a typical visitor arrives holding 10–40 coins. A literal 1:1 economy is a paywall wearing a game costume.</p>
+      </div>
+      <div class="card skb rv">
+        <span class="tag">trap 02 · the content</span>
+        <p>84 hand-authored stages is 84 chances to ship a level that cannot actually be finished — and in a game about dying, a broken stage looks identical to a hard one. Nobody files a bug report for a level they assume they're just bad at. The failure mode is silent, and it costs the player real coins.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="insight wrap">
+  <div class="shead rv" style="justify-content:center"><span class="n">02 · the insight</span></div>
+  <p class="q rv">“In a game built on lying to the player, the one thing that can never lie is <span class="hl">the level itself</span> — so I made solvability a compile step.”</p>
+  <p class="who rv">a search bot plays the real engine, and refuses the build if any stage — or any key — is unreachable</p>
+</section>
+
+<section class="wrap">
+  <div class="shead rv"><span class="n">03 · the approach</span><h2>six moves, in order</h2></div>
+  <div class="steps">
+    <div class="step skb rv"><span class="k">01</span><h3>deconstructed the troll grammar</h3><p>Studied Level Devil the way you would a rival product: a 36-trap taxonomy grouped by which promise each trap breaks — the floor lies, the goal lies, the rules change. The design rule that fell out: every surprise must teach; a trap that kills you twice the same way is a bug.</p></div>
+    <div class="step skb rv"><span class="k">02</span><h3>did the economy math before the fun</h3><p>Blind-run death rates (3–8 per stage) versus real wallet sizes (10–40 ◉) said a strict 1:1 economy stops most visitors inside two levels. So deaths cost 1 ◉ but clearing pays +5, opener stages retry free, and a zero-coin player gets a 6-second pity retry — the meter reads as tension, never as a toll booth.</p></div>
+    <div class="step skb rv"><span class="k">03</span><h3>built the engine to be interrogated</h3><p>Fixed 60&nbsp;Hz timestep, zero dependencies, and a simulation with no randomness and no wall-clock — same inputs, same result, every time. That is not purism; determinism is what makes a level provable.</p></div>
+    <div class="step skb rv"><span class="k">04</span><h3>made a bot earn the word “beatable”</h3><p>A beam-search solver plays the actual engine — not a model of it — and must reach the door in every stage before anything ships. It caught two of my three example levels as geometrically impossible, and one engine line that silently made all five spring stages unwinnable.</p></div>
+    <div class="step skb rv"><span class="k">05</span><h3>let the human overrule the machine</h3><p>The solver passed level 6-4 through a line no person would find while the intended route was impossible — the player caught what the bot could not. Rule kept from that day: machine-proof solvability, human-check feel.</p></div>
+    <div class="step skb rv"><span class="k">06</span><h3>shipped it like a product, not a toy</h3><p>Seven Playwright suites — economy paths, progression locks, page audit, whole-site gate — plus a production smoke test that plays stage one with a real keyboard on the live site: dies, retries free, clears, collects the bounty.</p></div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="shead rv"><span class="n">04 · in the wild</span><h2>the economy at the moment it bites</h2></div>
+  <div class="figs">
+    <figure class="mock rv"><div class="frame skb"><img src="assets/tla-death.webp" alt="Death overlay showing retry for one coin" loading="lazy"></div><figcaption>the economy at the moment it bites — retry costs 1 ◉, door-openers stay free, broke players get a pity timer instead of a wall ✏</figcaption></figure>
+    <figure class="mock rv"><div class="frame skb"><img src="assets/tla-keystage.webp" alt="A stage with a golden key visible" loading="lazy"></div><figcaption>a golden key stage — three per level, never adjacent, every placement machine-proven collectible ✏</figcaption></figure>
+    <figure class="mock rv"><div class="frame skb"><img src="assets/tla-reward.webp" alt="The secret reward page reveal" loading="lazy"></div><figcaption>finish everything and my avatar walks out to tell you a sequel is coming — the one page the site never advertises ✏</figcaption></figure>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="shead rv"><span class="n">05 · before / after</span><h2>the title screen — explored dark, shipped paper</h2></div>
+  <div class="ba">
+    <div class="rv"><span class="chip">before</span><div class="frame skb" style="padding:10px"><img src="assets/tla-before.webp" alt="Rejected dark variant of the title screen" loading="lazy"></div><p class="hand" style="margin-top:12px;font-size:1.08rem;color:var(--muted)">variant C — a dark, shadcn-style take with a ⌘K palette; polished, rejected for sounding like someone else’s site ✏</p></div>
+    <div class="after rv"><span class="chip">after</span><div class="frame skb" style="padding:10px"><img src="assets/tla-after.webp" alt="The shipped paper title screen" loading="lazy"></div><p class="hand" style="margin-top:12px;font-size:1.08rem;color:var(--muted)">the shipped title screen — two buttons, the coin rule in plain text, and the whole game one tap away ✏</p></div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="shead rv"><span class="n">06 · the win</span><h2>what shipped</h2></div>
+  <div class="wins">
+    <div class="win skb rv"><span class="tag"><img src="assets/key.png" alt="">win 01</span><h3>a game the site can afford</h3><p>The coin loop closed: earn ◉ anywhere on the site, spend it in the arcade, win it back by playing well. First try always free, so an empty wallet is never a locked door.</p></div>
+    <div class="win skb rv"><span class="tag"><img src="assets/key.png" alt="">win 02</span><h3>progression with real stakes</h3><p>A level is seven stages; three hide golden keys, never in neighbouring stages. All seven cleared AND all three keys unlocks the next level — so keys are a reason to return, not decoration.</p></div>
+    <div class="win skb rv"><span class="tag"><img src="assets/key.png" alt="">win 03</span><h3>a secret worth keeping</h3><p>Clearing all 84 stages with all 36 keys opens /reward — my walk-cycle avatar strolls in and reveals THAT LEVEL AGAIN 2. No menu links it, the sitemap omits it, and a CSS specificity bug that briefly leaked it to everyone became a fix and a lesson.</p></div>
+    <div class="win skb rv"><span class="tag"><img src="assets/key.png" alt="">win 04</span><h3>a QA harness as part of the design</h3><p>Solvability as a compile step, key placement proven by replaying the winning path, 275+ checks green before deploy. The claim “every level is beatable” is not marketing copy — it is a test result.</p></div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="shead rv"><span class="n">07 · the screens</span><h2>walk to the door</h2></div>
+  <div class="figs wide">
+    <figure class="mock rv"><div class="frame skb"><img src="assets/tla-title.webp" alt="Title screen of That Level Again" loading="lazy"></div><figcaption>the title screen — START resumes exactly where you owe a stage or a key ✏</figcaption></figure>
+  </div>
+  <div class="figs wide">
+    <figure class="mock rv"><div class="frame skb"><img src="assets/tla-select.webp" alt="Level select with locks and key chips" loading="lazy"></div><figcaption>level select — locks, key counts and per-stage chips; gold means a key is still in there ✏</figcaption></figure>
+  </div>
+  <div class="figs wide">
+    <figure class="mock rv"><div class="frame skb"><img src="assets/tla-machines.webp" alt="Level 12 MACHINES with lasers and turrets" loading="lazy"></div><figcaption>level 12, MACHINES — timed lasers, turrets and an advancing wall, all built from a 23-action trigger DSL ✏</figcaption></figure>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="shead rv"><span class="n">08 · loot</span><h2>run complete</h2></div>
+    <div class="meterbox rv">
+      <div class="lbl"><span>stages the solver proves beatable</span><b id="meterVal">0/84</b></div>
+      <div class="meter"><i id="meterFill"></i></div>
+    </div>
+    <div class="achv rv">
+      <span class="tro">🏆</span>
+      <span class="t">ACHIEVEMENT UNLOCKED: <b>level architect — built a game where “every level works” is a test result, not a promise</b></span>
+    </div>
+    <div class="lstats">
+      <div class="lstat rv"><b>84</b><span>stages, all machine-proven beatable</span></div>
+      <div class="lstat rv"><b>36</b><span>keys, every placement verified</span></div>
+      <div class="lstat rv"><b>275+</b><span>automated checks before deploy</span></div>
+      <div class="lstat rv"><b>0</b><span>dependencies in a 41.6 KB engine</span></div>
+    </div>
+    <div class="cta rv" style="margin-top:34px">
+      <a class="btn" href="https://parthanand.in/arcade">▶ play the game</a>
+      <a class="btn alt" style="background:#221f1a;color:#f2eee3" href="https://parthanand.in/work">more quests at parthanand.in ▸</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap row">
+    <span class="hand">drawn &amp; built by parth <span class="pen">✏</span></span>
+    <nav>
+      <a href="https://parthanand.in">parthanand.in</a>
+      <a href="https://parthanand.in/arcade">the arcade</a>
+      <a href="https://github.com/anandparth">github</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict'
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  /* ── Excalidraw-style boxes: seeded wobble, stroked twice.
+        One pass looks like a wonky rectangle; the second pass at a different
+        seed is what makes it read as hand-drawn. ── */
+  const SVGNS = 'http://www.w3.org/2000/svg'
+  const seeded = s => () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
+  function wobble(w, h, jit, rand) {
+    const pts = [], pad = 4
+    const edge = (x1, y1, x2, y2, n) => {
+      for (let i = 0; i < n; i++) {
+        const t = i / n
+        pts.push([x1 + (x2 - x1) * t + (rand() - .5) * jit, y1 + (y2 - y1) * t + (rand() - .5) * jit])
+      }
+    }
+    edge(pad, pad, w - pad, pad, 5); edge(w - pad, pad, w - pad, h - pad, 4)
+    edge(w - pad, h - pad, pad, h - pad, 5); edge(pad, h - pad, pad, pad, 4)
+    return 'M' + pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('L') + 'Z'
+  }
+  function sketch(el, seed) {
+    let svg = el.querySelector(':scope > svg.sk')
+    if (!svg) {
+      svg = document.createElementNS(SVGNS, 'svg')
+      svg.setAttribute('class', 'sk'); svg.setAttribute('preserveAspectRatio', 'none')
+      svg.appendChild(document.createElementNS(SVGNS, 'path'))
+      svg.appendChild(document.createElementNS(SVGNS, 'path'))
+      el.insertBefore(svg, el.firstChild)
+    }
+    const r = el.getBoundingClientRect()
+    const w = Math.max(10, r.width + 8), h = Math.max(10, r.height + 8)
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h)
+    const ps = svg.querySelectorAll('path')
+    ps[0].setAttribute('d', wobble(w, h, 2.6, seeded(seed)))
+    ps[1].setAttribute('d', wobble(w, h, 3.4, seeded(seed * 7 + 13)))
+    ps[1].style.opacity = .5
+  }
+  const boxes = [...document.querySelectorAll('.skb')]
+  const ro = new ResizeObserver(es => es.forEach(e => sketch(e.target, +e.target.dataset.seed)))
+  boxes.forEach((el, i) => { el.dataset.seed = i * 977 + 31; sketch(el, i * 977 + 31); ro.observe(el) })
+
+  /* ── the 8-bit door in the hero — the same stone arch the game draws,
+        at 5× with a slow open/close breath ── */
+  const cv = document.getElementById('doorcv')
+  if (cv) {
+    const g = cv.getContext('2d')
+    const S = 5, CX = 8, CY = 8, RO = 8, RI = 5
+    const span = (ry, R, f0, f1) => {
+      if (ry >= CY) return [f0, f1]
+      const dy = CY - ry
+      if (dy > R) return null
+      const hw = Math.sqrt(R * R - dy * dy)
+      return [Math.round(CX - hw), Math.round(CX + hw)]
+    }
+    function drawDoor(openAmt) {
+      g.setTransform(S, 0, 0, S, 0, 0)
+      g.clearRect(0, 0, 16, 28)
+      for (let ry = 0; ry < 24; ry++) {
+        const o = span(ry, RO, 0, 16); if (!o) continue
+        const inn = span(ry, RI, 3, 13)
+        const ix0 = inn ? inn[0] : CX, ix1 = inn ? inn[1] : CX
+        if (ix1 > ix0) { g.fillStyle = '#17120e'; g.fillRect(ix0, ry + 2, ix1 - ix0, 1) }
+        const leaf = Math.round((ix1 - ix0) * (1 - openAmt))
+        if (leaf > 0) {
+          g.fillStyle = ry / 24 < .12 ? '#b5793f' : '#96602f'
+          g.fillRect(ix0, ry + 2, leaf, 1)
+          g.fillStyle = '#7d4f27'
+          for (const px of [3, 7]) if (px < leaf) g.fillRect(ix0 + px, ry + 2, 1, 1)
+        }
+        g.fillStyle = (ry % 5 === 0) ? '#7d8287' : '#9aa0a6'
+        g.fillRect(o[0], ry + 2, Math.max(0, ix0 - o[0]), 1)
+        g.fillRect(ix1, ry + 2, Math.max(0, o[1] - ix1), 1)
+        g.fillStyle = 'rgba(0,0,0,.28)'
+        g.fillRect(o[0], ry + 2, 1, 1); g.fillRect(o[1] - 1, ry + 2, 1, 1)
+      }
+      if (openAmt < .5) {
+        g.fillStyle = '#3d3a35'; g.fillRect(10, 16, 2, 2)
+        g.fillStyle = '#d9d2c4'; g.fillRect(10, 16, 1, 1)
+      }
+    }
+    if (reduce) drawDoor(0)
+    else {
+      let t0 = performance.now()
+      const tick = now => {
+        const t = (now - t0) / 1000
+        drawDoor((Math.sin(t * 0.9) + 1) / 2 * 0.6)
+        requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    }
+  }
+
+  /* ── reveals + count-ups + the meter ── */
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return
+    e.target.classList.add('in')
+    e.target.querySelectorAll('b[data-count]').forEach(b => {
+      if (b.dataset.done) return
+      b.dataset.done = 1
+      const to = +b.dataset.count
+      if (reduce || to === 0) { b.textContent = to === 275 ? '275+' : String(to); return }
+      const t0 = performance.now(), dur = 900
+      const step = now => {
+        const p = Math.min(1, (now - t0) / dur)
+        const v = Math.round(to * (1 - Math.pow(1 - p, 3)))
+        b.textContent = to === 275 && p === 1 ? '275+' : String(v)
+        if (p < 1) requestAnimationFrame(step)
+      }
+      requestAnimationFrame(step)
+    })
+    io.unobserve(e.target)
+  }), { threshold: 0.15 })
+  document.querySelectorAll('.rv').forEach(el => io.observe(el))
+
+  /* the meter gets its own zero-threshold observer — a fast programmatic scroll
+     can blow past a 0.15 threshold without ever intersecting enough to fire */
+  let meterDone = false
+  function runMeter() {
+    if (meterDone) return
+    meterDone = true
+    const fill = document.getElementById('meterFill'), val = document.getElementById('meterVal')
+    fill.style.width = '100%'
+    if (reduce) { val.textContent = '84/84'; return }
+    const t0 = performance.now()
+    const step = now => {
+      const p = Math.min(1, (now - t0) / 1400)
+      val.textContent = Math.round(84 * p) + '/84'
+      if (p < 1) requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }
+  const mb = document.querySelector('.meterbox')
+  if (mb) {
+    const mio = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { runMeter(); mio.disconnect() } }), { threshold: 0 })
+    mio.observe(mb)
+    /* belt over braces: some mobile emulators drop IO callbacks during
+       programmatic scrolls — a plain geometry check on scroll cannot miss */
+    const seen = () => {
+      if (meterDone) { removeEventListener('scroll', seen); return }
+      const r = mb.getBoundingClientRect()
+      if (r.top < innerHeight && r.bottom > 0) { runMeter(); removeEventListener('scroll', seen) }
+    }
+    addEventListener('scroll', seen, { passive: true })
+    seen()
+  }
+})()
+</script>
+</body>
+</html>
